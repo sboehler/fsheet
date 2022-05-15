@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"image/png"
 	"net/url"
 	"os"
 )
@@ -33,8 +34,25 @@ func run() error {
 		return err
 	}
 	ctx := context.Background()
-	_, err = dl.DownloadAll(ctx)
+	res, err := dl.DownloadAll(ctx)
 	if err != nil {
+		return err
+	}
+	img, err := merge(res)
+	if err != nil {
+		return err
+	}
+	ins, outs, err := detectMeasures(img)
+	if err != nil {
+		return err
+	}
+	fmt.Println(len(ins), ins)
+	fmt.Println(len(outs), outs)
+	out, err := os.Create("./output.png")
+	if err != nil {
+		return err
+	}
+	if err := png.Encode(out, img); err != nil {
 		return err
 	}
 	fmt.Println("fsheet!")
