@@ -7,6 +7,8 @@ import (
 	"image/png"
 	"net/url"
 	"os"
+
+	"github.com/signintech/gopdf"
 )
 
 var (
@@ -56,5 +58,16 @@ func run() error {
 		return err
 	}
 	fmt.Println("fsheet!")
+
+	pdf := gopdf.GoPdf{}
+	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
+	pdf.AddPage()
+
+	if err := pdf.ImageFrom(img, 15, 25, nil); err != nil {
+		return err
+	}
+
+	pdf.WritePdf("image.pdf")
+
 	return nil
 }
