@@ -37,6 +37,7 @@ func (dl *Downloader) Download(ctx context.Context, index int) (image.Image, err
 	return png.Decode(resp.Body)
 }
 
+// DownloadAll downloads and returns all images.
 func (dl *Downloader) DownloadAll(ctx context.Context) ([]image.Image, error) {
 	var cache = make(map[int]image.Image)
 

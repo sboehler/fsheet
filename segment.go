@@ -6,7 +6,7 @@ import (
 	"image/color"
 )
 
-func merge(imgs []image.Image) (image.Image, error) {
+func merge(imgs []image.Image) (*image.Gray, error) {
 	var w, h int
 	for i, img := range imgs {
 		if h == 0 {
