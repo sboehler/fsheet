@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"image/png"
 	"net/url"
 	"os"
 
@@ -26,7 +25,6 @@ func main() {
 }
 
 func run() error {
-	fmt.Println(*imgURL)
 	u, err := url.Parse(*imgURL)
 	if err != nil {
 		return err
@@ -48,25 +46,11 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(len(m.measures), m)
-	out, err := os.Create("./output.png")
-	if err != nil {
-		return err
+	lines := m.computeLines(4000)
+	r := renderer{
+		pageFormat: gopdf.PageSizeA4,
+		marginTop:  10, marginRight: 10, marginLeft: 10, marginBottom: 10,
+		pixelsPerPoint: 4000 / 550.0,
 	}
-	if err := png.Encode(out, img); err != nil {
-		return err
-	}
-	fmt.Println("fsheet!")
-
-	pdf := gopdf.GoPdf{}
-	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
-	pdf.AddPage()
-
-	if err := pdf.ImageFrom(img, 15, 25, nil); err != nil {
-		return err
-	}
-
-	pdf.WritePdf("image.pdf")
-
-	return nil
+	return r.render(img, lines, "output.pdf")
 }

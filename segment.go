@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+
+	"github.com/signintech/gopdf"
 )
 
 func merge(imgs []image.Image) (*image.Gray, error) {
@@ -32,26 +34,79 @@ func merge(imgs []image.Image) (*image.Gray, error) {
 	return res, nil
 }
 
-type measure struct {
-	Start, End int
+type bar struct {
+	StartPos, EndPos int
 }
+
+type measure struct {
+	Start, End bar
+}
+
+func (m measure) length() int {
+	return m.End.EndPos - m.Start.StartPos + 1
+}
+
+type line []measure
+
+func (l line) length() int {
+	if len(l) == 0 {
+		return 0
+	}
+	return l[len(l)-1].End.EndPos - l[0].Start.StartPos + 1
+}
+
+func (l line) extraLength(m measure) int {
+	if len(l) == 0 {
+		return m.length()
+	}
+	return m.End.EndPos - l[0].Start.StartPos + 1
+}
+
 type measures struct {
-	measures []measure
+	measures      []measure
+	width, height int
 }
 
 func newMeasures(img image.Image) (*measures, error) {
-	m, err := detectMeasures(img)
+	bars, err := detectBars(img)
 	if err != nil {
 		return nil, fmt.Errorf("detectMeasures(): %w", err)
 	}
+	if len(bars) < 2 {
+		return nil, fmt.Errorf("only %d bars detected", len(bars))
+	}
+	var m []measure
+	prev, tail := bars[0], bars[1:]
+	for _, b := range tail {
+		m = append(m, measure{Start: prev, End: b})
+		prev = b
+	}
 	return &measures{
 		measures: m,
+		width:    img.Bounds().Dx(),
+		height:   img.Bounds().Dy(),
 	}, nil
 }
 
-func detectMeasures(img image.Image) ([]measure, error) {
+func (mss measures) computeLines(maxPixels int) []line {
 	var (
-		res []measure
+		res     []line
+		current line
+	)
+	for _, m := range mss.measures {
+		if current.extraLength(m) < maxPixels {
+			current = append(current, m)
+			continue
+		}
+		res = append(res, current)
+		current = []measure{m}
+	}
+	return append(res, current)
+}
+
+func detectBars(img image.Image) ([]bar, error) {
+	var (
+		res []bar
 
 		first = -1
 		last  = -1
@@ -78,14 +133,59 @@ func detectMeasures(img image.Image) ([]measure, error) {
 			}
 		} else {
 			if first > 0 && first < x-tol {
-				res = append(res, measure{Start: first, End: last})
+				res = append(res, bar{StartPos: first, EndPos: last})
 				first = -1
 				last = -1
 			}
 		}
 	}
 	if first > 0 {
-		res = append(res, measure{Start: first, End: last})
+		res = append(res, bar{StartPos: first, EndPos: last})
 	}
 	return res, nil
+}
+
+type renderer struct {
+	marginTop, marginRight, marginBottom, marginLeft float64
+	pixelsPerPoint                                   float64
+	ySpacing                                         int
+	pageFormat                                       *gopdf.Rect
+	title, composer                                  string
+}
+
+func (rnd renderer) render(img *image.Gray, lls []line, path string) error {
+	var (
+		pdf        gopdf.GoPdf
+		lineHeight = rnd.pxToPt(img.Bounds().Dy())
+	)
+
+	if rnd.marginTop+rnd.marginBottom+lineHeight > rnd.pageFormat.H {
+		return fmt.Errorf("can't print one line per page")
+	}
+
+	pdf.Start(gopdf.Config{
+		PageSize: *rnd.pageFormat,
+	})
+	pdf.AddPage()
+
+	y := rnd.marginTop
+
+	for _, l := range lls {
+		if y+lineHeight > rnd.pageFormat.H-rnd.marginBottom {
+			pdf.AddPage()
+			y = rnd.marginTop
+		}
+		sub := image.Rect(l[0].Start.StartPos, 0, l[len(l)-1].End.EndPos, img.Bounds().Dy())
+		tgt := &gopdf.Rect{W: rnd.pxToPt(sub.Dx()), H: rnd.pxToPt(sub.Dy())}
+		if err := pdf.ImageFrom(img.SubImage(sub), rnd.marginLeft, y, tgt); err != nil {
+			return err
+		}
+		y += lineHeight
+	}
+	return pdf.WritePdf(path)
+}
+
+func (rnd renderer) pxToPt(px int) float64 {
+	return float64(px) / rnd.pixelsPerPoint
+
 }

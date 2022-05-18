@@ -112,7 +112,6 @@ func findMax(f func(int) (bool, error)) (int, error) {
 		} else {
 			r = i
 		}
-		fmt.Println(l, r)
 		i = (r + l) / 2
 		if r <= l {
 			break
