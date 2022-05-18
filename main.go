@@ -44,12 +44,11 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	ins, outs, err := detectMeasures(img)
+	m, err := newMeasures(img)
 	if err != nil {
 		return err
 	}
-	fmt.Println(len(ins), ins)
-	fmt.Println(len(outs), outs)
+	fmt.Println(len(m.measures), m)
 	out, err := os.Create("./output.png")
 	if err != nil {
 		return err

@@ -32,9 +32,26 @@ func merge(imgs []image.Image) (*image.Gray, error) {
 	return res, nil
 }
 
-func detectMeasures(img image.Image) ([]int, []int, error) {
+type measure struct {
+	Start, End int
+}
+type measures struct {
+	measures []measure
+}
+
+func newMeasures(img image.Image) (*measures, error) {
+	m, err := detectMeasures(img)
+	if err != nil {
+		return nil, fmt.Errorf("detectMeasures(): %w", err)
+	}
+	return &measures{
+		measures: m,
+	}, nil
+}
+
+func detectMeasures(img image.Image) ([]measure, error) {
 	var (
-		ins, outs []int
+		res []measure
 
 		first = -1
 		last  = -1
@@ -61,16 +78,14 @@ func detectMeasures(img image.Image) ([]int, []int, error) {
 			}
 		} else {
 			if first > 0 && first < x-tol {
-				ins = append(ins, first)
-				outs = append(outs, last)
+				res = append(res, measure{Start: first, End: last})
 				first = -1
 				last = -1
 			}
 		}
 	}
 	if first > 0 {
-		ins = append(ins, first)
-		outs = append(outs, last)
+		res = append(res, measure{Start: first, End: last})
 	}
-	return ins, outs, nil
+	return res, nil
 }
