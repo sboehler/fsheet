@@ -2,30 +2,39 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"net/url"
 	"os"
 
 	"github.com/signintech/gopdf"
-)
-
-var (
-	title  = flag.String("title", "", "song title")
-	imgURL = flag.String("url", "", "image url")
+	"github.com/spf13/cobra"
 )
 
 func main() {
-	flag.Parse()
-
-	if err := run(); err != nil {
+	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func run() error {
-	u, err := url.Parse(*imgURL)
+var rootCmd = &cobra.Command{
+	Use:  "fsheet",
+	RunE: runE,
+}
+
+func init() {
+	rootCmd.Flags().String("title", "", "song title")
+	rootCmd.Flags().String("url", "", "image url")
+	rootCmd.MarkFlagRequired("url")
+}
+
+func runE(cmd *cobra.Command, args []string) error {
+	imgURL, err := cmd.Flags().GetString("url")
+	if err != nil {
+		return err
+	}
+
+	u, err := url.Parse(imgURL)
 	if err != nil {
 		return err
 	}
