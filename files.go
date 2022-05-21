@@ -86,6 +86,7 @@ func (dl offlinePage) parseMetaData() (*metadata, error) {
 	// strategy: look for a <span> followed by a <h4>, these
 	// will contain composer and title.
 	for {
+		// expect <span>
 		tt := z.Next()
 		if tt == html.ErrorToken {
 			return nil, z.Err()
@@ -93,42 +94,42 @@ func (dl offlinePage) parseMetaData() (*metadata, error) {
 		if tt != html.StartTagToken {
 			continue
 		}
-		// <span>
 		tn, _ := z.TagName()
 		if string(tn) != "span" {
 			continue
 		}
+		// expect text with composer
 		tt = z.Next()
-		// composer
 		if tt != html.TextToken {
 			continue
 		}
 		composer := string(z.Text())
+		// expect </span>
 		tt = z.Next()
-		// </span>
 		if tt != html.EndTagToken {
 			continue
 		}
+		// skip any white space
 		tt = z.Next()
-		// EOL
-		if tt != html.TextToken {
-			continue
+		for tt == html.TextToken {
+			tt = z.Next()
 		}
-		tt = z.Next()
-		// <h4>
+		// expect <h4>
 		if tt != html.StartTagToken {
 			continue
 		}
-		tn, _ = z.TagName()
-		if string(tn) != "h4" {
+		if tn, _ = z.TagName(); string(tn) != "h4" {
 			continue
 		}
+		// expect text with title
 		tt = z.Next()
-		// title
 		if tt != html.TextToken {
 			continue
 		}
 		title := string(z.Text())
-		return &metadata{Title: title, Composer: composer}, nil
+		return &metadata{
+			Title:    title,
+			Composer: composer,
+		}, nil
 	}
 }
