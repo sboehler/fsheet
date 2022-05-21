@@ -1,9 +1,7 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"net/url"
 	"os"
 
 	"github.com/signintech/gopdf"
@@ -20,30 +18,23 @@ func main() {
 var rootCmd = &cobra.Command{
 	Use:  "fsheet",
 	RunE: runE,
+	Args: cobra.ExactArgs(1),
 }
 
 func init() {
 	rootCmd.Flags().String("title", "", "song title")
-	rootCmd.Flags().String("url", "", "image url")
-	rootCmd.MarkFlagRequired("url")
 }
 
 func runE(cmd *cobra.Command, args []string) error {
-	imgURL, err := cmd.Flags().GetString("url")
+	f := offlinePage{
+		Path: args[0],
+	}
+	md, err := f.parseMetaData()
 	if err != nil {
 		return err
 	}
-
-	u, err := url.Parse(imgURL)
-	if err != nil {
-		return err
-	}
-	dl, err := NewDownloader(u)
-	if err != nil {
-		return err
-	}
-	ctx := context.Background()
-	res, err := dl.DownloadAll(ctx)
+	fmt.Println(*md)
+	res, err := f.findImages()
 	if err != nil {
 		return err
 	}
