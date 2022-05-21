@@ -33,7 +33,6 @@ func runE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(*md)
 	res, err := f.findImages()
 	if err != nil {
 		return err
@@ -51,6 +50,8 @@ func runE(cmd *cobra.Command, args []string) error {
 		pageFormat: gopdf.PageSizeA4,
 		marginTop:  10, marginRight: 10, marginLeft: 10, marginBottom: 10,
 		pixelsPerPoint: 4000 / 550.0,
+		title:          md.Title,
+		composer:       md.Composer,
 	}
-	return r.render(img, lines, "output.pdf")
+	return r.render(img, lines, fmt.Sprintf("%s - %s.pdf", md.Title, md.Composer))
 }
