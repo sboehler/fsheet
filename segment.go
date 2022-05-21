@@ -149,13 +149,21 @@ func detectBars(img image.Image) ([]bar, error) {
 type renderer struct {
 	font                                             []byte
 	marginTop, marginRight, marginBottom, marginLeft float64
-	pixelsPerPoint                                   float64
 	ySpacing                                         float64
 	pageFormat                                       *gopdf.Rect
 	title, composer                                  string
+
+	pixelsPerPoint float64
 }
 
-func (rnd renderer) render(img *image.Gray, lls []line, path string) error {
+func (rnd *renderer) render(img *image.Gray, lls []line, path string) error {
+	var maxLineLengthPx int
+	for _, l := range lls {
+		if l.length() > maxLineLengthPx {
+			maxLineLengthPx = l.length()
+		}
+	}
+	rnd.pixelsPerPoint = float64(maxLineLengthPx) / (rnd.pageFormat.W - rnd.marginLeft - rnd.marginRight)
 	var (
 		pdf        = new(gopdf.GoPdf)
 		lineHeight = rnd.pxToPt(img.Bounds().Dy())
@@ -196,7 +204,10 @@ func (rnd renderer) render(img *image.Gray, lls []line, path string) error {
 			y = rnd.marginTop
 		}
 		sub := image.Rect(l[0].Start.StartPos, 0, l[len(l)-1].End.EndPos, img.Bounds().Dy())
-		tgt := &gopdf.Rect{W: rnd.pxToPt(sub.Dx()), H: rnd.pxToPt(sub.Dy())}
+		tgt := &gopdf.Rect{
+			W: rnd.pxToPt(sub.Dx()),
+			H: rnd.pxToPt(sub.Dy()),
+		}
 		if err := pdf.ImageFrom(img.SubImage(sub), rnd.marginLeft, y, tgt); err != nil {
 			return err
 		}

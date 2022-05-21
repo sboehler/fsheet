@@ -52,16 +52,15 @@ func runE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	linelengthPx := 2500
-	lines := m.computeLines(linelengthPx)
+	maxLinelengthPx := 2500
+	lines := m.computeLines(maxLinelengthPx)
 	r := renderer{
 		pageFormat: gopdf.PageSizeA4,
 		font:       font,
 		marginTop:  30, marginRight: 30, marginLeft: 30, marginBottom: 30,
-		pixelsPerPoint: float64(linelengthPx) / 550.0,
-		ySpacing:       20,
-		title:          md.Title,
-		composer:       md.Composer,
+		ySpacing: 20,
+		title:    md.Title,
+		composer: md.Composer,
 	}
 	return r.render(img, lines, fmt.Sprintf("%s - %s.pdf", md.Title, md.Composer))
 }
