@@ -4,8 +4,15 @@ import (
 	"fmt"
 	"os"
 
+	_ "embed"
+
 	"github.com/signintech/gopdf"
 	"github.com/spf13/cobra"
+)
+
+var (
+	//go:embed Roboto-Medium.ttf
+	font []byte
 )
 
 func main() {
@@ -45,11 +52,14 @@ func runE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	lines := m.computeLines(4000)
+	linelengthPx := 2500
+	lines := m.computeLines(linelengthPx)
 	r := renderer{
 		pageFormat: gopdf.PageSizeA4,
-		marginTop:  10, marginRight: 10, marginLeft: 10, marginBottom: 10,
-		pixelsPerPoint: 4000 / 550.0,
+		font:       font,
+		marginTop:  30, marginRight: 30, marginLeft: 30, marginBottom: 30,
+		pixelsPerPoint: float64(linelengthPx) / 550.0,
+		ySpacing:       20,
 		title:          md.Title,
 		composer:       md.Composer,
 	}

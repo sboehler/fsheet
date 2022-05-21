@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"image/color"
@@ -111,7 +112,7 @@ func detectBars(img image.Image) ([]bar, error) {
 		first = -1
 		last  = -1
 
-		tol = 100
+		tol = 10
 	)
 	for x := 0; x < img.Bounds().Dx(); x++ {
 		var blacks int
@@ -124,7 +125,7 @@ func detectBars(img image.Image) ([]bar, error) {
 				panic("expected gray scale image")
 			}
 		}
-		if blacks > img.Bounds().Dy()/2 {
+		if float64(blacks) > float64(img.Bounds().Dy())*0.65 {
 			if first < 0 {
 				first = x
 				last = x
@@ -146,16 +147,17 @@ func detectBars(img image.Image) ([]bar, error) {
 }
 
 type renderer struct {
+	font                                             []byte
 	marginTop, marginRight, marginBottom, marginLeft float64
 	pixelsPerPoint                                   float64
-	ySpacing                                         int
+	ySpacing                                         float64
 	pageFormat                                       *gopdf.Rect
 	title, composer                                  string
 }
 
 func (rnd renderer) render(img *image.Gray, lls []line, path string) error {
 	var (
-		pdf        gopdf.GoPdf
+		pdf        = new(gopdf.GoPdf)
 		lineHeight = rnd.pxToPt(img.Bounds().Dy())
 	)
 
@@ -166,9 +168,27 @@ func (rnd renderer) render(img *image.Gray, lls []line, path string) error {
 	pdf.Start(gopdf.Config{
 		PageSize: *rnd.pageFormat,
 	})
+	if err := pdf.AddTTFFontByReader("roboto", bytes.NewBuffer(rnd.font)); err != nil {
+		return err
+	}
 	pdf.AddPage()
 
+	if err := pdf.SetFont("roboto", "", 20); err != nil {
+		return err
+	}
 	y := rnd.marginTop
+	pdf.SetY(y)
+
+	if err := rnd.centeredText(pdf, rnd.title, 20); err != nil {
+		return err
+	}
+	y += 30.0
+	pdf.SetY(y)
+	if err := rnd.centeredText(pdf, rnd.composer, 13.33); err != nil {
+		return err
+	}
+	y += 30.0
+	pdf.SetY(y)
 
 	for _, l := range lls {
 		if y+lineHeight > rnd.pageFormat.H-rnd.marginBottom {
@@ -180,7 +200,7 @@ func (rnd renderer) render(img *image.Gray, lls []line, path string) error {
 		if err := pdf.ImageFrom(img.SubImage(sub), rnd.marginLeft, y, tgt); err != nil {
 			return err
 		}
-		y += lineHeight
+		y += lineHeight + rnd.ySpacing
 	}
 	return pdf.WritePdf(path)
 }
@@ -188,4 +208,18 @@ func (rnd renderer) render(img *image.Gray, lls []line, path string) error {
 func (rnd renderer) pxToPt(px int) float64 {
 	return float64(px) / rnd.pixelsPerPoint
 
+}
+
+func (rnd renderer) centeredText(pdf *gopdf.GoPdf, text string, size float64) error {
+	pdf.SetX(rnd.marginLeft)
+	if err := pdf.SetFont("roboto", "", size); err != nil {
+		return err
+	}
+	box := &gopdf.Rect{
+		W: rnd.pageFormat.W - rnd.marginLeft - rnd.marginRight,
+		H: size,
+	}
+	return pdf.CellWithOption(box, text, gopdf.CellOption{
+		Align: gopdf.Center,
+	})
 }
