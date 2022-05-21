@@ -89,7 +89,7 @@ func newMeasures(img image.Image) (*measures, error) {
 	}, nil
 }
 
-func (mss measures) computeLines(maxPixels int) []line {
+func (mss measures) computeLines(maxPixels int) ([]line, error) {
 	var (
 		res     []line
 		current line
@@ -99,10 +99,13 @@ func (mss measures) computeLines(maxPixels int) []line {
 			current = append(current, m)
 			continue
 		}
+		if current.length() == 0 {
+			return nil, fmt.Errorf("maximum line length too small: %d", maxPixels)
+		}
 		res = append(res, current)
 		current = []measure{m}
 	}
-	return append(res, current)
+	return append(res, current), nil
 }
 
 func detectBars(img image.Image) ([]bar, error) {

@@ -29,7 +29,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.Flags().String("title", "", "song title")
+	rootCmd.Flags().IntP("max-line-length-px", "l", 2500, "maximum line length in pixels")
 }
 
 func runE(cmd *cobra.Command, args []string) error {
@@ -52,8 +52,14 @@ func runE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	maxLinelengthPx := 2500
-	lines := m.computeLines(maxLinelengthPx)
+	maxLinelengthPx, err := cmd.Flags().GetInt("max-line-length-px")
+	if err != nil {
+		return err
+	}
+	lines, err := m.computeLines(maxLinelengthPx)
+	if err != nil {
+		return err
+	}
 	r := renderer{
 		pageFormat: gopdf.PageSizeA4,
 		font:       font,
