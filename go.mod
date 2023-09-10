@@ -5,7 +5,6 @@ go 1.18
 require (
 	github.com/signintech/gopdf v0.12.0
 	github.com/spf13/cobra v1.4.0
-	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2
 )
 
 require (
