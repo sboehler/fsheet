@@ -60,7 +60,7 @@ func (sh *Sheet) Create() error {
 		pageFormat: gopdf.PageSizeA4,
 		font:       font,
 		marginTop:  30, marginRight: 30, marginLeft: 30, marginBottom: 30,
-		ySpacing: 20,
+		ySpacing: 10,
 		title:    sh.Title,
 	}
 	return r.render(img, lines, fmt.Sprintf("%s.pdf", sh.Title))
@@ -238,7 +238,7 @@ func detectBars(img image.Image) ([]bar, error) {
 			}
 		}
 		ratio := float64(blacks) / float64(img.Bounds().Dy())
-		if ratio > 0.6 {
+		if ratio > 0.5 {
 			if first < 0 {
 				first = x
 				last = x
