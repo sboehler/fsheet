@@ -38,6 +38,8 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.Flags().IntP("max-line-length-px", "l", 2500, "maximum line length in pixels")
+
+	rootCmd.AddCommand(CreateDownloadCommand())
 }
 
 func runE(cmd *cobra.Command, args []string) error {
